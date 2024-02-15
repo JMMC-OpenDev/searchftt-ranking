@@ -8,7 +8,7 @@ This repository gathers 2 python modules estimating GPAO strehl ratio &amp; GRAV
 
 
 ## Links:
-- [JMMC SearchFTT service](https://www.jmmc.fr)
+- [JMMC SearchFTT service](https://searchftt.jmmc.fr/)
 - [JMMC OpenDev @ github](https://github.com/JMMC-OpenDev/)
 - [JMMC releases](https://www.jmmc.fr/releases/)
 - [JMMC Web site](https://www.jmmc.fr)
