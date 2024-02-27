@@ -117,103 +117,6 @@ def computeStrehl_UT_NGS(flag_mode, target_ao_mag, distance_ao_as):
     return aspro.compute_Marechal_NGS(config_NGS, config_target, config_ao, config_turbulence, config_Strehl)
 
 
-def compute_GRAVITY_UT(target_ft_mag, SR_ft, distance_ft_sci_as):
-    if trace:
-        print(f"compute_GRAVITY_UT(target_ft_mag={target_ft_mag}, SR_ft={SR_ft}, distance_ft_sci_as={distance_ft_sci_as})")
-
-    # only import GRAVITYSimulator if needed:
-    import GRAVITYSimulator.gravmodel as gravmodel
-
-    config_obs = {}
-    config_obs["tel"] = "UT"
-    config_obs["res"] = "MEDIUM"  # or 'MEDIUM' or 'HIGH'
-    config_obs["pol"] = "COMBINED"  # or 'SPLIT'
-    config_obs["mode"] = "DUAL"  # or 'DUAL'
-    config_obs["grism_intervention"] = "post"  # post 2021 observations
-    config_obs["laser_on"] = True
-    config_obs["ut_vib_rms"] = 200.0
-
-    # target properties:
-    config = {}
-    config["sci_mag"] = 100.0  # unused
-    config["sci_dit"] = 0.0  # unused
-
-    config["ft_mag"] = target_ft_mag
-
-    config["strehl_ratio"] = SR_ft
-    config["tau0"] = config_turbulence["tau0"]
-
-    sci_wavelength = 2.2e-6
-    tel_diam = 8.0  # UT
-
-    ft_dits = [1000.0, 303.0, 100.0]
-
-    ft_snr = np.zeros(len(ft_dits))
-    sig_opd = np.zeros(len(ft_dits))
-
-    for i, ft_freq in enumerate(ft_dits):
-        # use model to get FT info:
-        gv = gravmodel.GravModel(
-            config["sci_mag"],
-            config["ft_mag"],
-            tel=config_obs["tel"],
-            res=config_obs["res"],
-            pol=config_obs["pol"],
-            mode=config_obs["mode"],
-            grism_intervention=config_obs["grism_intervention"],
-            laser_on=config_obs["laser_on"],
-            ut_vib_rms=config_obs["ut_vib_rms"],
-            dit=config["sci_dit"],
-            ft_freq=ft_freq,
-            strehl_ratio=config["strehl_ratio"],
-            tau0=config["tau0"],
-        )
-
-        ft_signal = gv.get_ft_signal(plot=show_plot)
-
-        ft_phot = gv.get_ft_phot(ft_signal)
-
-        ft_snr[i] = gv.get_ft_snr(ft_phot)
-
-        sig_opd[i] = gv.get_opd_rms(ft_snr[i])
-
-        # print(f"FT freq: {ft_freq} hz")
-        # print(f"ft_photons: {ft_phot}")
-        # print(f"ft_snr: {ft_snr[i]}")
-        # print(f"sig_opd: {sig_opd[i]} nm")
-
-    if trace:
-        print(f"sig_opds: {sig_opd} nm")
-
-    # Use best (ie min):
-    best = sig_opd.argmin()
-
-    # best_ft_freq = ft_dits[best]
-    # print(f"best FT freq: {best_ft_freq} hz")
-
-    # best_ft_dit = 1000.0 / best_ft_freq
-    # print(f"best FT dit:  {best_ft_dit} ms")
-
-    best_sig_opd = sig_opd[best]
-    # print(f"best FT sigma_opd: {best_sig_opd} nm")
-
-    ft_vis_loss = gravmodel.ft_vis_loss(best_sig_opd, sci_wavelength)
-    # print(f"ft_vis_loss: {ft_vis_loss}")
-
-    offaxis_loss = gravmodel.elhalkouj_vis_loss(
-        tel_diam,
-        config_turbulence["seeing"],
-        config_turbulence["h_0"],
-        distance_ft_sci_as,
-        sci_wavelength,
-    )
-    # print(f"offaxis_loss: {offaxis_loss}")
-
-    total_coherence_loss = ft_vis_loss * offaxis_loss
-
-    return total_coherence_loss
-
-
 def compute_ASPRO_GRAVITY_UT(target_ft_mag, SR_ft, distance_ft_sci_as):
     if trace:
         print(f"compute_ASPRO_GRAVITY_UT(target_ft_mag={target_ft_mag}, SR_ft={SR_ft}, distance_ft_sci_as={distance_ft_sci_as})")
@@ -299,28 +202,6 @@ def compute_ASPRO_GRAVITY_UT(target_ft_mag, SR_ft, distance_ft_sci_as):
 
 # --- score ---
 
-def ranking_GRAVITY_UT(sci_Kmag, ft_Kmag, sci_ft_dist,
-                       ao_mode, ao_Rmag, sci_ao_dist, ft_ao_dist):
-    # 1. Strehl ratios:
-    # print("--- 1. Strehl ---")
-
-    strehl_ft = computeStrehl_UT_NGS(ao_mode, ao_Rmag, ft_ao_dist)
-    # print(f"strehl_ft:  {strehl_ft}")
-
-    strehl_sci = computeStrehl_UT_NGS(ao_mode, ao_Rmag, sci_ao_dist)
-    # print(f"strehl_sci: {strehl_sci}")
-
-    # 2. FT SNR:
-    # print("--- 2. GRAVITY FT ---")
-
-    total_vis_loss = compute_GRAVITY_UT(ft_Kmag, strehl_ft, sci_ft_dist)
-    # print(f"total_vis_loss: {total_vis_loss}")
-
-    # 3. ranking:
-    # TODO: use sci_Kmag to rank science targets too:
-    return strehl_sci * total_vis_loss
-
-
 def ranking_GRAVITY_UT_NGS(sci_Kmag, ft_Kmag, sci_ft_dist,
                            ao_Rmag, sci_ao_dist, ft_ao_dist):
     """  interface use by the jmmc python webservice """
@@ -330,10 +211,7 @@ def ranking_GRAVITY_UT_NGS(sci_Kmag, ft_Kmag, sci_ft_dist,
     strehl_sci = computeStrehl_UT_NGS(ao_mode, ao_Rmag, sci_ao_dist)
 
     # Use Aspro2 (derived) transmission tables:
-    if True:
-        total_vis_loss = compute_ASPRO_GRAVITY_UT(ft_Kmag, strehl_ft, sci_ft_dist)
-    else:
-        total_vis_loss = compute_GRAVITY_UT(ft_Kmag, strehl_ft, sci_ft_dist)
+    total_vis_loss = compute_ASPRO_GRAVITY_UT(ft_Kmag, strehl_ft, sci_ft_dist)
 
     # print(f"total_vis_loss:       {total_vis_loss}")
     score = strehl_sci * total_vis_loss
@@ -341,6 +219,7 @@ def ranking_GRAVITY_UT_NGS(sci_Kmag, ft_Kmag, sci_ft_dist,
     if score < 1e-3:
         score = 0.0
     return score
+
 
 # --- main ---
 if __name__ == "__main__":
