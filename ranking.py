@@ -20,7 +20,7 @@ trace = False
 config_turbulence = {}
 config_turbulence["seeing"] = 1.0
 config_turbulence["tau0"] = 3.2  # (ms)
-config_turbulence["h_0"] = 4300.0  # Altitude of the turbulent layers (m) (could be a list) (for isoplanetism)
+config_turbulence["h_0"] = 3700.0  # Altitude of the turbulent layers (m) (could be a list) (for isoplanetism)
 config_turbulence["Cn2"] = 1.0  # Cn2 weight (could be a list) (for collapsing h_0 and v_0 to an equivalent individual layer)
 
 # seeing = 1 as gives r0:
