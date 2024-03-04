@@ -190,6 +190,8 @@ def computeStrehl_UT_NGS(flag_mode, target_ao_mag, distance_ao_as, iso=False):
 
 
 def plotStrehlIso(flag_mode):
+    ao_Rmag = 5.0
+
     plt.figure(figsize=(20, 10))
 
     dists_AO = np.arange(0.0, 30.0, 0.2, dtype=float)
@@ -251,9 +253,6 @@ def plotStrehlMag(flag_mode):
 if __name__ == "__main__":
     flag_mode = "NGS_VIS"
 
-    # unused args:
-    ao_Rmag = 5.0
-
     # Using ESO turbulence categories:
     #     - GRAVITY: https://www.eso.org/sci/observing/phase2/ObsConditions.GRAVITY.html
     #         More specifically, the categories are:
@@ -274,5 +273,6 @@ if __name__ == "__main__":
 
     plotStrehlIso(flag_mode)
     plotStrehlMag(flag_mode)
+    plotStrehlMag("NGS_IR")
 
     print("That's All, folks !'")
